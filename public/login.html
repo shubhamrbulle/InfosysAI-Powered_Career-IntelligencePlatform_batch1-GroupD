@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Login — CareerPilot AI</title>
+<meta name="description" content="Log in to CareerPilot AI to continue your career journey." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+<div class="auth">
+  <aside class="auth-side">
+    <a href="/" class="logo" style="color:white;">
+      <div class="logo-mark" style="background:rgba(255,255,255,.2);">C</div>
+      <span>CareerPilot AI</span>
+    </a>
+    <div>
+      <h2>Your AI career<br/>journey starts here</h2>
+      <p class="lead">Analyze. Learn. Grow. Get hired. One intelligent workspace built for your entire career.</p>
+      <div class="side-features">
+        <div class="side-feature">
+          <div class="side-feature-icon">📄</div>
+          <div><h4>Resume Intelligence</h4><p>Section-by-section AI feedback</p></div>
+        </div>
+        <div class="side-feature">
+          <div class="side-feature-icon">📊</div>
+          <div><h4>Career Readiness</h4><p>A live score, always up to date</p></div>
+        </div>
+        <div class="side-feature">
+          <div class="side-feature-icon">🤖</div>
+          <div><h4>AI Mentor</h4><p>Coaching from top-company playbooks</p></div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:12px;opacity:.75;">✨ Trusted by 120,000+ professionals worldwide</p>
+  </aside>
+
+  <main class="auth-main">
+    <button class="btn btn-ghost theme-toggle-fixed" data-theme-toggle aria-label="Toggle theme"></button>
+    <div class="auth-card">
+      <h1>Welcome back</h1>
+      <p class="sub">Continue your career journey</p>
+      <form class="form" id="loginForm" novalidate>
+        <div class="field">
+          <input id="email" type="email" placeholder=" " required autocomplete="email" />
+          <label for="email">Email</label>
+        </div>
+        <div class="field">
+          <input id="password" type="password" placeholder=" " required autocomplete="current-password" minlength="6" />
+          <label for="password">Password</label>
+          <button type="button" class="toggle-eye" id="togglePw" aria-label="Show password">👁</button>
+        </div>
+        <div class="form-row">
+          <label style="display:flex;align-items:center;gap:6px;color:var(--muted);cursor:pointer;">
+            <input type="checkbox" /> Remember me
+          </label>
+          <a href="#" id="forgot">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Login to CareerPilot</button>
+        <div class="divider"><span>or continue with</span></div>
+        <div class="social-row">
+          <button type="button" class="social-btn" id="googleBtn">
+            <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.2-.1-2.3-.1-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.5 6.1 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.4 0 10.2-2 13.9-5.3l-6.4-5.4C29.4 34.9 26.9 36 24 36c-5.2 0-9.6-3.3-11.2-8l-6.5 5C9.6 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.7 2-2 3.8-3.7 5.1l6.4 5.4c-.4.4 6.9-5 6.9-14.5 0-1.2-.1-2.3-.3-3.5z"/></svg>
+            Continue with Google
+          </button>
+        </div>
+      </form>
+      <p class="auth-footer">Don't have an account? <a href="/signup.html">Create account</a></p>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+  import { signInWithEmail, signInWithGoogle, toast, getUser, supabase } from '/app.js';
+
+  // If already signed in, jump to dashboard
+  getUser().then(u => { if (u) window.location.href = '/dashboard.html'; });
+
+  const form = document.getElementById('loginForm');
+  const btn = document.getElementById('submitBtn');
+  const pw = document.getElementById('password');
+  document.getElementById('togglePw').addEventListener('click', () => {
+    pw.type = pw.type === 'password' ? 'text' : 'password';
+  });
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const password = pw.value;
+    if (!/\S+@\S+\.\S+/.test(email)) return toast('Enter a valid email', 'error');
+    if (password.length < 6) return toast('Password must be at least 6 characters', 'error');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div>';
+    try {
+      await signInWithEmail(email, password);
+      toast('Welcome back!');
+      setTimeout(() => window.location.href = '/dashboard.html', 400);
+    } catch (err) {
+      toast(err.message || 'Login failed', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Login to CareerPilot';
+    }
+  });
+
+  document.getElementById('googleBtn').addEventListener('click', signInWithGoogle);
+
+  document.getElementById('forgot').addEventListener('click', async e => {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    if (!email) return toast('Enter your email above first', 'error');
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/login.html'
+    });
+    if (error) toast(error.message, 'error');
+    else toast('Password reset link sent to your inbox');
+  });
+  window.jsLoaded = true;
+</script>
+</body>
+</html>

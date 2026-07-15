@@ -1,0 +1,1439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dashboard — CareerPilot AI</title>
+<meta name="description" content="Your CareerPilot AI dashboard: readiness score, matches, roadmap." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/styles.css" />
+<style>
+  /* Local styles for tab system and parser UI */
+  .tab-content {
+    display: none;
+  }
+  .tab-content.active {
+    display: block;
+  }
+  .sidebar .side-link {
+    cursor: pointer;
+  }
+  .sidebar .side-link.active {
+    background: var(--card-2);
+    font-weight: 600;
+  }
+  .dropzone {
+    border: 2px dashed var(--border);
+    padding: 40px;
+    border-radius: var(--radius);
+    text-align: center;
+    background: var(--card);
+    cursor: pointer;
+    transition: all .2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .dropzone:hover {
+    border-color: var(--brand);
+    background: var(--card-2);
+  }
+  .dropzone-icon {
+    font-size: 40px;
+  }
+  .file-input {
+    display: none;
+  }
+  .onboarding-card {
+    max-width: 600px;
+    margin: 40px auto;
+    text-align: center;
+    padding: 30px;
+  }
+  .pill-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .pill {
+    background: var(--card-2);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    border: 1px solid var(--border);
+  }
+  .chat-box {
+    height: 350px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    overflow-y: auto;
+    background: var(--card);
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .chat-msg {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+  }
+  .chat-msg.mentor {
+    background: var(--card-2);
+    align-self: flex-start;
+  }
+  .chat-msg.user {
+    background: var(--brand);
+    color: white;
+    align-self: flex-end;
+  }
+  .chat-input-wrap {
+    display: flex;
+    gap: 8px;
+  }
+  .chat-input {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    background: var(--card);
+  }
+  .skill-gap-item {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 10px;
+  }
+  .skill-gap-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+  }
+  .skill-gap-tags {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+  .tag-demand-high { background:#dcfce7; color:#166534; padding:2px 8px; border-radius:999px; font-size:11px; }
+  .tag-demand-medium { background:#fef9c3; color:#854d0e; padding:2px 8px; border-radius:999px; font-size:11px; }
+  .tag-demand-growing { background:#dbeafe; color:#1e40af; padding:2px 8px; border-radius:999px; font-size:11px; }
+  .tag-critical { background:#fee2e2; color:#991b1b; padding:2px 8px; border-radius:999px; font-size:11px; }
+  .tag-important { background:#ffedd5; color:#9a3412; padding:2px 8px; border-radius:999px; font-size:11px; }
+  .tag-nice { background:var(--card-2); color:var(--muted); padding:2px 8px; border-radius:999px; font-size:11px; }
+  .skill-gap-why { font-size:13px; color:var(--muted); margin-top:8px; }
+  .skill-gap-meta { font-size:12px; color:var(--muted); margin-top:6px; }
+  .sg-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .sg-bar-label { width: 140px; font-size: 13px; flex-shrink: 0; }
+  .sg-bar-track { flex: 1; height: 14px; background: var(--card-2); border-radius: 999px; overflow: hidden; }
+  .sg-bar-fill { height: 100%; border-radius: 999px; transition: width .6s ease; }
+  .sg-bar-fill.present { background: var(--success); }
+  .sg-bar-fill.missing { background: var(--border); }
+  .sg-bar-pct { width: 40px; text-align: right; font-size: 12px; color: var(--muted); flex-shrink: 0; }
+  .ci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .ci-box { border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .ci-box h4 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .ci-box ul { padding-left: 18px; font-size: 13px; color: var(--muted); }
+  .ci-box li { margin-bottom: 6px; }
+  .ci-strength { border-left: 3px solid var(--success); }
+  .ci-weakness { border-left: 3px solid #ef4444; }
+  .ci-opportunity { border-left: 3px solid var(--brand); }
+  .ci-trajectory { border-left: 3px solid #f59e0b; }
+  .mi-fb-box { border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-top: 10px; }
+  .mi-fb-good { border-left: 3px solid var(--success); }
+  .mi-fb-warn { border-left: 3px solid #f59e0b; }
+  .mi-fb-item { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .pd-eligible { border-left: 3px solid var(--success); }
+  .pd-not-eligible { border-left: 3px solid #ef4444; opacity: 0.85; }
+  .pd-reason { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .onboarding-choice {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .choice-card {
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    width: 220px;
+    cursor: pointer;
+    text-align: center;
+    transition: all .2s;
+  }
+  .choice-card:hover {
+    border-color: var(--brand);
+    background: var(--card-2);
+  }
+  .manual-form-group {
+    margin-bottom: 16px;
+    text-align: left;
+  }
+  .manual-form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .manual-form-group input,
+  .manual-form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    font-family: inherit;
+    font-size: 14px;
+  }
+  .manual-form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+  }
+  .skill-tag-input-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    background: var(--card);
+  }
+  .skill-tag {
+    background: var(--card-2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .skill-tag button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1;
+  }
+  .skill-tag-input-wrap input {
+    border: none;
+    flex: 1;
+    min-width: 120px;
+    outline: none;
+    background: transparent;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="dash-wrap">
+  <aside class="sidebar">
+    <a href="/" class="logo" style="margin-bottom:12px;">
+      <div class="logo-mark gradient-brand">C</div>
+      <span>CareerPilot</span>
+    </a>
+    <div class="sidebar-title">Workspace</div>
+    <a class="side-link active" data-tab="dashboard">📊 Dashboard</a>
+    <a class="side-link" data-tab="resume">📄 Resume</a>
+    <a class="side-link" data-tab="jobs">🎯 Job matches</a>
+    <a class="side-link" data-tab="roadmap">🧭 Roadmap</a>
+    <a class="side-link" data-tab="mentor">🤖 AI Mentor</a>
+    <a class="side-link" data-tab="skillgap">🧩 Skill Gap Analysis</a>
+    <a class="side-link" data-tab="careerintel">🧠 Career Intelligence</a>
+    <a class="side-link" data-tab="mockinterview">🎤 Mock Interview</a>
+    <a class="side-link" data-tab="placement">🏢 Placement Drives</a>
+    <div class="sidebar-title" style="margin-top:auto;">Account</div>
+    <a class="side-link" data-tab="settings">⚙️ Settings</a>
+    <button class="side-link" id="signOutBtn" style="text-align:left;">↪ Sign out</button>
+  </aside>
+
+  <main class="dash-main">
+    <div class="dash-head">
+      <div>
+        <h1>Welcome back, <span id="userName" class="gradient-text">there</span> 👋</h1>
+        <p id="subGreeting">Here's what needs your attention today.</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-ghost" data-theme-toggle aria-label="Toggle theme"></button>
+        <button class="btn btn-outline" id="notifBtn">🔔 Notifications</button>
+        <button class="btn btn-primary" id="updateResumeBtn">+ Update resume</button>
+      </div>
+    </div>
+
+    <!-- Onboarding State -->
+    <!-- Onboarding State -->
+    <div id="onboardingState" class="tab-content active">
+      <div class="card onboarding-card" id="onboardingChoiceCard">
+        <div style="font-size:48px;margin-bottom:12px;">🚀</div>
+        <h2>Unlock AI Career Intelligence</h2>
+        <p style="color:var(--muted);margin:10px 0 20px;">Choose how you'd like to build your profile.</p>
+        <div class="onboarding-choice">
+          <div class="choice-card" id="chooseUpload">
+            <div style="font-size:32px;margin-bottom:8px;">📄</div>
+            <div style="font-weight:700;">Upload resume</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px;">.pdf or .docx, auto-extracted</div>
+          </div>
+          <div class="choice-card" id="chooseManual">
+            <div style="font-size:32px;margin-bottom:8px;">✍️</div>
+            <div style="font-weight:700;">Enter manually</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px;">Fill in your own details</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card onboarding-card" id="onboardingUploadCard" style="display:none;">
+        <button class="btn btn-ghost" id="backFromUpload" style="margin-bottom:12px;">← Back</button>
+        <div style="font-size:48px;margin-bottom:12px;">📄</div>
+        <h2>Upload your resume</h2>
+        <p style="color:var(--muted);margin:10px 0 20px;">We'll extract your skills, experience, and education automatically.</p>
+        <div class="dropzone" id="onboardingDropzone">
+          <div class="dropzone-icon">📄</div>
+          <p style="font-weight:600;">Drag and drop your resume here</p>
+          <p style="font-size:12px;color:var(--muted);">or click to browse (.pdf, .docx)</p>
+          <input type="file" class="file-input" id="onboardingFileInput" accept=".pdf,.docx" />
+        </div>
+        <div id="onboardingLoading" style="display:none;margin-top:16px;">
+          <div class="spinner" style="margin: 0 auto 8px;"></div>
+          <p style="font-size:14px;color:var(--brand);">Parsing and sync with Supabase...</p>
+        </div>
+      </div>
+
+      <div class="card" id="manualFormCard" style="display:none;max-width:600px;margin:40px auto;">
+        <button class="btn btn-ghost" id="backFromManual" style="margin-bottom:12px;">← Back</button>
+        <h2 style="margin-bottom:6px;">Enter your details</h2>
+        <p style="color:var(--muted);margin-bottom:20px;font-size:14px;">This builds the same profile as a resume upload — fill in what applies.</p>
+        <form id="manualForm">
+          <div class="manual-form-group">
+            <label>Full name</label>
+            <input type="text" id="manualName" required />
+          </div>
+          <div class="manual-form-group">
+            <label>Email</label>
+            <input type="email" id="manualEmail" required />
+          </div>
+          <div class="manual-form-group">
+            <label>Skills</label>
+            <div class="skill-tag-input-wrap" id="skillTagWrap">
+              <input type="text" id="skillTagInput" placeholder="Type a skill and press Enter" />
+            </div>
+          </div>
+          <div class="manual-form-group">
+            <label>Experience (roles, companies, durations, what you did)</label>
+            <textarea id="manualExperience" placeholder="e.g. Frontend Intern at XYZ Corp (Jun–Aug 2025) — built React dashboards..."></textarea>
+          </div>
+          <div class="manual-form-group">
+            <label>Education</label>
+            <textarea id="manualEducation" placeholder="e.g. B.Tech CSE, XYZ Institute, 2023–2027, CGPA 9.2"></textarea>
+          </div>
+          <div class="manual-form-group">
+            <label>Projects</label>
+            <textarea id="manualProjects" placeholder="e.g. Built a resume parser using pdf.js and mammoth.js..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;">Save profile</button>
+        </form>
+        <div id="manualLoading" style="display:none;margin-top:16px;text-align:center;">
+          <div class="spinner" style="margin:0 auto 8px;"></div>
+          <p style="font-size:14px;color:var(--brand);">Saving to your account...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Tab -->
+    <div id="dashboardTab" class="tab-content">
+      <div class="grid-3">
+        <div class="card">
+          <div class="score-ring">
+            <svg class="ring-svg" viewBox="0 0 120 120">
+              <defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#2563eb"/><stop offset="100%" stop-color="#06b6d4"/>
+              </linearGradient></defs>
+              <circle class="ring-track" cx="60" cy="60" r="52" fill="none" stroke-width="12"/>
+              <circle class="ring-fill" cx="60" cy="60" r="52" fill="none" stroke-width="12"
+                stroke-dasharray="327" stroke-dashoffset="327" id="ringFill"
+                transform="rotate(-90 60 60)"/>
+            </svg>
+            <div class="score-text">
+              <div class="score-num" id="scoreNum">0</div>
+              <div class="score-label">Career Readiness</div>
+              <div class="metric-trend" id="readinessTrend">Dynamic Score</div>
+            </div>
+          </div>
+        </div>
+        <div class="card metric">
+          <div class="metric-label">Resume score</div>
+          <div class="metric-val" id="resumeScoreVal" data-count="0" data-suffix="%">0%</div>
+          <div class="progress"><div class="progress-bar" id="resumeProgressBar" style="width:0%;"></div></div>
+          <div class="metric-trend">Optimized vs benchmark</div>
+        </div>
+        <div class="card metric">
+          <div class="metric-label">Skills mapped</div>
+          <div class="metric-val" id="skillsCountVal" data-count="0">0</div>
+          <div class="progress"><div class="progress-bar" id="skillsProgressBar" style="width:0%;"></div></div>
+          <div class="metric-trend">Extracted from resume</div>
+        </div>
+        <div class="card metric">
+          <div class="metric-label">Job matches</div>
+          <div class="metric-val" id="jobMatchesVal" data-count="0">0</div>
+          <div class="progress"><div class="progress-bar" id="jobsProgressBar" style="width:0%;"></div></div>
+          <div class="metric-trend">Matching your skills</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="font-weight:700;font-size:16px;margin-bottom:16px;display:flex;justify-content:space-between;">
+            Top matched roles <a class="side-link" data-tab="jobs" style="color:var(--brand);font-size:13px;">View all</a>
+          </h3>
+          <div id="jobsList">
+            <!-- Dynamic jobs go here -->
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-weight:700;font-size:16px;margin-bottom:16px;display:flex;justify-content:space-between;">
+            This week's roadmap <a class="side-link" data-tab="roadmap" style="color:var(--brand);font-size:13px;">View details</a>
+          </h3>
+          <div id="roadmapList">
+            <!-- Dynamic roadmap items go here -->
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h3 style="font-weight:700;font-size:16px;">💡 AI insight of the day</h3>
+          <span class="badge badge-hot">New</span>
+        </div>
+        <p style="color:var(--muted);font-size:14px;" id="aiInsightText">Analyzing your data...</p>
+      </div>
+    </div>
+
+    <!-- Resume Tab -->
+    <div id="resumeTab" class="tab-content">
+      <div class="card" style="margin-bottom:20px;">
+        <h3>Resume Intelligence & Details</h3>
+        <p style="color:var(--muted);margin-bottom:16px;">Manage your uploaded resume data or upload a new one to refresh details.</p>
+        
+        <div class="dropzone" id="resumeDropzone">
+          <div class="dropzone-icon">📄</div>
+          <p style="font-weight:600;">Upload new resume to overwrite</p>
+          <input type="file" class="file-input" id="resumeFileInput" accept=".pdf,.docx" />
+        </div>
+        <div id="resumeLoading" style="display:none;margin-top:16px;text-align:center;">
+          <div class="spinner" style="margin:0 auto 8px;"></div>
+          <p style="font-size:14px;color:var(--brand);">Parsing and saving file...</p>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="margin-bottom:12px;">Contact details</h3>
+          <div style="display:grid;gap:12px;">
+            <div>
+              <label style="font-size:12px;color:var(--muted);">Extracted Name</label>
+              <div style="font-weight:600;font-size:16px;" id="extractedName">-</div>
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--muted);">Extracted Email</label>
+              <div style="font-weight:600;font-size:16px;" id="extractedEmail">-</div>
+            </div>
+          </div>
+
+          <h3 style="margin-top:24px;margin-bottom:12px;">Skills list</h3>
+          <div class="pill-list" id="extractedSkills">
+            <!-- Dynamic skills -->
+          </div>
+        </div>
+
+        <div class="card" style="display:grid;gap:20px;">
+          <div>
+            <h3 style="margin-bottom:8px;">Experience</h3>
+            <pre style="white-space:pre-wrap;font-family:inherit;font-size:14px;color:var(--muted);" id="extractedExperience">-</pre>
+          </div>
+          <div>
+            <h3 style="margin-bottom:8px;">Education</h3>
+            <pre style="white-space:pre-wrap;font-family:inherit;font-size:14px;color:var(--muted);" id="extractedEducation">-</pre>
+          </div>
+          <div>
+            <h3 style="margin-bottom:8px;">Projects</h3>
+            <pre style="white-space:pre-wrap;font-family:inherit;font-size:14px;color:var(--muted);" id="extractedProjects">-</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Job Matches Tab -->
+    <div id="jobsTab" class="tab-content">
+      <div class="card">
+        <h3>Smart Job Matches</h3>
+        <p style="color:var(--muted);margin-bottom:20px;">These roles are selected automatically based on the skills extracted from your resume.</p>
+        <div style="display:grid;gap:16px;" id="jobsTabList">
+          <!-- Jobs -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Roadmap Tab -->
+    <div id="roadmapTab" class="tab-content">
+      <div class="card">
+        <h3>Personalized Learning Roadmap</h3>
+        <p style="color:var(--muted);margin-bottom:20px;">Complete these steps to address gaps in your profile and level up your Readiness Score.</p>
+        <div style="display:grid;gap:16px;" id="roadmapTabList">
+          <!-- Roadmap items -->
+        </div>
+      </div>
+    </div>
+    <!-- Placement Drives Tab -->
+    <div id="placementTab" class="tab-content">
+      <div class="card">
+        <h3>Placement Drives</h3>
+        <p style="color:var(--muted);margin-bottom:20px;">Upcoming campus drives, with your real eligibility checked against each company's minimum requirements.</p>
+        <div id="placementList" style="display:grid;gap:16px;"></div>
+      </div>
+    </div>
+
+    <!-- Mock Interview Tab -->
+    <!-- Mock Interview Tab -->
+    <div id="mockinterviewTab" class="tab-content">
+      <div class="card">
+        <h3>Mock Interview</h3>
+        <p style="color:var(--muted);margin-bottom:16px;">Questions are chosen based on your best-matched role and skill gaps — not random.</p>
+        <div id="miIntro"></div>
+        <div id="miQuestionWrap" style="display:none;">
+          <div style="font-weight:600;font-size:15px;margin-bottom:10px;" id="miQuestionText"></div>
+          <textarea id="miAnswerInput" placeholder="Type your answer here..." style="width:100%;min-height:120px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--card);font-family:inherit;font-size:14px;"></textarea>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button class="btn btn-primary" id="miSubmitBtn">Submit answer</button>
+            <button class="btn btn-outline" id="miSkipBtn">Skip question</button>
+          </div>
+          <div id="miFeedback" style="margin-top:16px;"></div>
+        </div>
+        <div id="miDone" style="display:none;text-align:center;padding:20px;">
+          <div style="font-size:40px;margin-bottom:8px;">🎉</div>
+          <h4>Session complete</h4>
+          <p style="color:var(--muted);font-size:14px;margin:8px 0 16px;" id="miSummary"></p>
+          <button class="btn btn-primary" id="miRestartBtn">Start new session</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Career Intelligence Tab -->
+    <!-- Career Intelligence Tab -->
+    <div id="careerintelTab" class="tab-content">
+      <div class="card">
+        <h3>Career Intelligence</h3>
+        <p style="color:var(--muted);margin-bottom:20px;">A snapshot of where you stand, computed from your actual profile and job matches — not guesses.</p>
+        <div id="careerIntelBody"></div>
+      </div>
+    </div>
+
+    <!-- Skill Gap Analysis Tab -->
+    <!-- Skill Gap Analysis Tab -->
+    <div id="skillgapTab" class="tab-content">
+      <div class="card">
+        <h3>Skill Gap Analysis</h3>
+        <p style="color:var(--muted);margin-bottom:16px;">Pick a job role to see exactly which skills you're missing, why they matter, and what to do about it.</p>
+        <select id="skillGapJobSelect" style="width:100%;max-width:400px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);font-size:14px;margin-bottom:20px;"></select>
+        <div id="skillGapChartWrap" style="margin-bottom:24px;"></div>
+        <div id="skillGapDetail"></div>
+      </div>
+    </div>
+
+    <!-- AI Mentor Tab -->
+    <!-- AI Mentor Tab -->
+    <div id="mentorTab" class="tab-content">
+      <div class="card">
+        <h3>AI Career Mentor Chat</h3>
+        <p style="color:var(--muted);margin-bottom:16px;">Chat with a career coach trained on Google, Stripe, and Linear hiring playbooks.</p>
+        <div class="chat-box" id="chatBox">
+          <div class="chat-msg mentor">Hello! I've analyzed your background. How can I help you optimize your resume, prepare for mock interviews, or narrow down job targets today?</div>
+        </div>
+        <form class="chat-input-wrap" id="chatForm">
+          <input type="text" class="chat-input" id="chatInput" placeholder="Ask about system design, resume tweaks..." required />
+          <button type="submit" class="btn btn-primary">Send</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div id="settingsTab" class="tab-content">
+      <div class="card" style="max-width: 600px;">
+        <h3>Account Settings</h3>
+        <p style="color:var(--muted);margin-bottom:20px;">Configure your preferences and profile details.</p>
+        
+        <div style="display:grid;gap:16px;">
+          <div>
+            <label style="font-size:12px;color:var(--muted);">Email Address</label>
+            <input type="text" id="settingsEmail" readonly style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--card-2);opacity:.8;" />
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted);">Full Name</label>
+            <input type="text" id="settingsName" readonly style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--card-2);opacity:.8;" />
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted);">Appearance Theme</label>
+            <div style="margin-top:6px;">
+              <button class="btn btn-outline" data-theme-toggle>Toggle Light/Dark Mode</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+  import { requireUser, signOut, animateCounter, supabase, toast, saveResumeData, getResumeData } from '/app.js';
+  import { parseResumeFile } from '/parser.js';
+  import { JOBS } from '/jobs-data.js';
+  import { PLACEMENT_DRIVES } from '/placement-data.js';
+  
+  // 1. Force Authentication
+  const user = await requireUser();
+  if (user) {
+    const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'there';
+    document.getElementById('userName').textContent = name;
+    document.getElementById('settingsEmail').value = user.email || '';
+    document.getElementById('settingsName').value = name;
+  }
+
+  document.getElementById('signOutBtn').addEventListener('click', signOut);
+
+  // 2. Tab System
+  const sidebarLinks = document.querySelectorAll('.side-link');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  function switchTab(tabId) {
+    sidebarLinks.forEach(l => {
+      if (l.dataset.tab === tabId) l.classList.add('active');
+      else l.classList.remove('active');
+    });
+
+    tabContents.forEach(tc => {
+      tc.classList.remove('active');
+    });
+
+    // Check if showing dashboard, but user has no resume data
+    if (tabId === 'dashboard' && !currentResumeData) {
+      document.getElementById('onboardingState').classList.add('active');
+    } else {
+      const activeTab = document.getElementById(tabId + 'Tab');
+      if (activeTab) activeTab.classList.add('active');
+    }
+  }
+
+  sidebarLinks.forEach(link => {
+    link.addEventListener('click', e => {
+      const tab = link.dataset.tab;
+      if (tab) switchTab(tab);
+    });
+  });
+
+  // Also catch logo and other internal dashboard links
+  document.querySelectorAll('a.side-link').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const tab = link.getAttribute('data-tab');
+      if (tab) switchTab(tab);
+    });
+  });
+
+  // 3. Dropzones & File Selectors
+  const onbDropzone = document.getElementById('onboardingDropzone');
+  const onbInput = document.getElementById('onboardingFileInput');
+  const resDropzone = document.getElementById('resumeDropzone');
+  const resInput = document.getElementById('resumeFileInput');
+
+  onbDropzone.addEventListener('click', () => onbInput.click());
+  resDropzone.addEventListener('click', () => resInput.click());
+
+  onbInput.addEventListener('change', e => handleResumeUpload(e.target.files[0], 'onboarding'));
+  resInput.addEventListener('change', e => handleResumeUpload(e.target.files[0], 'resume'));
+
+  // Drag and drop setup
+  ['dragenter', 'dragover'].forEach(eventName => {
+    onbDropzone.addEventListener(eventName, e => { e.preventDefault(); onbDropzone.style.borderColor = 'var(--brand)'; }, false);
+    resDropzone.addEventListener(eventName, e => { e.preventDefault(); resDropzone.style.borderColor = 'var(--brand)'; }, false);
+  });
+  ['dragleave', 'drop'].forEach(eventName => {
+    onbDropzone.addEventListener(eventName, e => { e.preventDefault(); onbDropzone.style.borderColor = 'var(--border)'; }, false);
+    resDropzone.addEventListener(eventName, e => { e.preventDefault(); resDropzone.style.borderColor = 'var(--border)'; }, false);
+  });
+  onbDropzone.addEventListener('drop', e => {
+    const dt = e.dataTransfer;
+    if (dt.files.length) handleResumeUpload(dt.files[0], 'onboarding');
+  });
+  resDropzone.addEventListener('drop', e => {
+    const dt = e.dataTransfer;
+    if (dt.files.length) handleResumeUpload(dt.files[0], 'resume');
+  });
+
+  document.getElementById('updateResumeBtn').addEventListener('click', () => {
+    switchTab('resume');
+  });
+
+  document.getElementById('notifBtn').addEventListener('click', () => {
+    toast('No new notifications today.');
+  });
+  // 3b. Onboarding choice + manual entry form
+  const choiceCard = document.getElementById('onboardingChoiceCard');
+  const uploadCard = document.getElementById('onboardingUploadCard');
+  const manualCard = document.getElementById('manualFormCard');
+
+  function showChoice() {
+    choiceCard.style.display = 'block';
+    uploadCard.style.display = 'none';
+    manualCard.style.display = 'none';
+  }
+  document.getElementById('chooseUpload').addEventListener('click', () => {
+    choiceCard.style.display = 'none';
+    uploadCard.style.display = 'block';
+  });
+  document.getElementById('chooseManual').addEventListener('click', () => {
+    choiceCard.style.display = 'none';
+    manualCard.style.display = 'block';
+  });
+  document.getElementById('backFromUpload').addEventListener('click', showChoice);
+  document.getElementById('backFromManual').addEventListener('click', showChoice);
+
+  // Skill tag input (multi-add)
+  let manualSkills = [];
+  const skillTagWrap = document.getElementById('skillTagWrap');
+  const skillTagInput = document.getElementById('skillTagInput');
+
+  function renderSkillTags() {
+    skillTagWrap.querySelectorAll('.skill-tag').forEach(t => t.remove());
+    manualSkills.forEach((skill, idx) => {
+      const tag = document.createElement('span');
+      tag.className = 'skill-tag';
+      tag.innerHTML = `${skill} <button type="button" data-idx="${idx}">×</button>`;
+      tag.querySelector('button').addEventListener('click', () => {
+        manualSkills.splice(idx, 1);
+        renderSkillTags();
+      });
+      skillTagWrap.insertBefore(tag, skillTagInput);
+    });
+  }
+  skillTagInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = skillTagInput.value.trim();
+      if (val && !manualSkills.includes(val)) {
+        manualSkills.push(val);
+        renderSkillTags();
+      }
+      skillTagInput.value = '';
+    }
+  });
+
+  // Shared scoring logic (same criteria as parser.js, so both paths are consistent)
+  function computeScores({ email, name, skills, experience, education, projects }) {
+    let resumeScore = 50;
+    if (email) resumeScore += 10;
+    if (name) resumeScore += 5;
+    if (skills.length > 3) resumeScore += 10;
+    if (experience && experience.trim()) resumeScore += 10;
+    if (education && education.trim()) resumeScore += 10;
+    if (projects && projects.trim()) resumeScore += 5;
+    resumeScore = Math.min(100, resumeScore + Math.min(10, skills.length));
+    const readinessScore = Math.min(100, Math.round(resumeScore * 0.8 + (skills.length * 1.5)));
+    return { resumeScore, readinessScore };
+  }
+
+  document.getElementById('manualForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const loader = document.getElementById('manualLoading');
+    loader.style.display = 'block';
+    try {
+      const name = document.getElementById('manualName').value.trim();
+      const email = document.getElementById('manualEmail').value.trim();
+      const experience = document.getElementById('manualExperience').value.trim();
+      const education = document.getElementById('manualEducation').value.trim();
+      const projects = document.getElementById('manualProjects').value.trim();
+      const { resumeScore, readinessScore } = computeScores({ email, name, skills: manualSkills, experience, education, projects });
+
+      const resumeDoc = {
+        name, email,
+        skills: manualSkills,
+        experience: experience || 'No experience section provided.',
+        education: education || 'No education section provided.',
+        projects: projects || 'No projects section provided.',
+        raw_text: `${name}\n${email}\nSkills: ${manualSkills.join(', ')}\nExperience: ${experience}\nEducation: ${education}\nProjects: ${projects}`,
+        resume_score: resumeScore,
+        readiness_score: readinessScore
+      };
+      await saveResumeData(user.id, resumeDoc);
+      toast('Profile saved!');
+      await loadResumeData();
+      switchTab('dashboard');
+    } catch (err) {
+      toast(err.message || 'Could not save profile', 'error');
+      console.error(err);
+    } finally {
+      loader.style.display = 'none';
+    }
+  });
+  // 4. Resume Parsing & Save
+  let currentResumeData = null;
+
+  async function handleResumeUpload(file, type) {
+    if (!file) return;
+    const loader = document.getElementById(type === 'onboarding' ? 'onboardingLoading' : 'resumeLoading');
+    loader.style.display = 'block';
+    
+    try {
+      const parsed = await parseResumeFile(file);
+
+      const resumeDoc = {
+        name: parsed.name,
+        email: parsed.email,
+        skills: parsed.skills,
+        experience: parsed.experience,
+        education: parsed.education,
+        projects: parsed.projects,
+        raw_text: parsed.raw_text,
+        resume_score: parsed.resume_score,
+        readiness_score: parsed.readiness_score
+      };
+      await saveResumeData(user.id, resumeDoc);
+
+      toast('Resume parsed and saved to your account!');
+      await loadResumeData();
+      switchTab('dashboard');
+    } catch (err) {
+      toast(err.message || 'Parsing / DB Sync failed', 'error');
+      console.error(err);
+    } finally {
+      loader.style.display = 'none';
+    }
+  }
+
+  // 5. Load Resume Data & Populate Views
+  async function loadResumeData() {
+    try {
+      const data = await getResumeData(user.id);
+
+      if (data) {
+        currentResumeData = data;
+        
+        // Hide onboarding, show dashboard content
+        document.getElementById('onboardingState').classList.remove('active');
+        document.getElementById('dashboardTab').classList.add('active');
+        // Compute readiness ring
+        const target = data.readiness_score;
+        const circumference = 327; // 2*pi*52
+        const num = document.getElementById('scoreNum');
+        const ring = document.getElementById('ringFill');
+        ring.style.strokeDashoffset = String(circumference - (circumference * target / 100));
+        animateCounter(num, target);
+        document.getElementById('readinessTrend').textContent = target > 75 ? 'Excellent readiness' : 'Room to grow';
+
+        // Set scores
+        const resVal = document.getElementById('resumeScoreVal');
+        resVal.dataset.count = data.resume_score;
+        animateCounter(resVal, data.resume_score, 1000);
+        document.getElementById('resumeProgressBar').style.width = data.resume_score + '%';
+
+        const skVal = document.getElementById('skillsCountVal');
+        skVal.dataset.count = data.skills?.length || 0;
+        animateCounter(skVal, data.skills?.length || 0, 1000);
+        document.getElementById('skillsProgressBar').style.width = Math.min(100, (data.skills?.length || 0) * 4) + '%';
+
+        // Extracted page populate
+        document.getElementById('extractedName').textContent = data.name || 'Not detected';
+        document.getElementById('extractedEmail').textContent = data.email || 'Not detected';
+        document.getElementById('extractedExperience').textContent = data.experience || 'None';
+        document.getElementById('extractedEducation').textContent = data.education || 'None';
+        document.getElementById('extractedProjects').textContent = data.projects || 'None';
+
+        const skillsContainer = document.getElementById('extractedSkills');
+        skillsContainer.innerHTML = '';
+        if (data.skills && data.skills.length > 0) {
+          data.skills.forEach(s => {
+            const span = document.createElement('span');
+            span.className = 'pill';
+            span.textContent = s;
+            skillsContainer.appendChild(span);
+          });
+        } else {
+          skillsContainer.innerHTML = '<span style="color:var(--muted);font-size:14px;">No skills mapped yet.</span>';
+        }
+
+        // Dynamically build jobs, roadmaps, and insights
+        generateDynamicContent(data.skills, data.name);
+        renderCareerIntelligence();
+        startMockInterview();
+        renderPlacementDrives();
+      } else {
+        // No data, show onboarding
+        currentResumeData = null;
+        document.getElementById('onboardingState').classList.add('active');
+        document.getElementById('dashboardTab').classList.remove('active');
+      }
+    } catch (err) {
+      console.error('Error fetching resume:', err);
+    }
+  }
+  // Skill metadata: explains WHY each skill matters, not just whether you have it.
+  // difficulty/timeWeeks are rough estimates a career coach would give, used to
+  // set expectations, not a precise measurement.
+  const SKILL_META = {
+    'JavaScript':      { why: 'Core language for nearly all web development roles.', demand: 'high', difficulty: 'Moderate', timeWeeks: 4, courses: ['JavaScript.info', 'The Odin Project'], projects: ['Build a to-do app with vanilla JS'] },
+    'TypeScript':       { why: 'Adds type safety, used by most modern engineering teams to reduce bugs at scale.', demand: 'high', difficulty: 'Moderate', timeWeeks: 3, courses: ['TypeScript Handbook (official docs)', 'Total TypeScript (free tier)'], projects: ['Convert an existing JS project to TypeScript'] },
+    'React':            { why: 'Most widely used frontend framework; expected baseline for frontend/full-stack roles.', demand: 'high', difficulty: 'Moderate', timeWeeks: 5, courses: ['React official docs tutorial', 'Scrimba React course'], projects: ['Build a multi-page app with routing and API calls'] },
+    'Node.js':          { why: 'Standard for JS-based backend services; needed for full-stack roles.', demand: 'high', difficulty: 'Moderate', timeWeeks: 4, courses: ['Node.js official guides', 'NodeSchool.io'], projects: ['Build a REST API with auth'] },
+    'PostgreSQL':       { why: 'Most common production relational database; used for real data modeling.', demand: 'medium', difficulty: 'Moderate', timeWeeks: 3, courses: ['PostgreSQL Exercises', 'Supabase docs'], projects: ['Design a normalized schema for a real app'] },
+    'TailwindCSS':      { why: 'Fast-growing utility CSS framework, commonly required for frontend speed.', demand: 'growing', difficulty: 'Easy', timeWeeks: 1, courses: ['Tailwind official docs'], projects: ['Rebuild an existing UI using Tailwind only'] },
+    'HTML':            { why: 'Foundational markup skill, assumed baseline for any web role.', demand: 'high', difficulty: 'Easy', timeWeeks: 1, courses: ['MDN HTML docs'], projects: ['Build a semantic, accessible landing page'] },
+    'CSS':             { why: 'Foundational styling skill, assumed baseline for any web role.', demand: 'high', difficulty: 'Easy', timeWeeks: 2, courses: ['MDN CSS docs', 'CSS Tricks'], projects: ['Recreate a real website\'s layout from scratch'] },
+    'Python':           { why: 'Dominant language for data, AI/ML, and backend scripting roles.', demand: 'high', difficulty: 'Easy', timeWeeks: 3, courses: ['Python official tutorial', 'CS50P'], projects: ['Build a data-processing script or small API'] },
+    'Figma':            { why: 'Industry-standard design tool; expected for any design-adjacent role.', demand: 'high', difficulty: 'Easy', timeWeeks: 2, courses: ['Figma official tutorials'], projects: ['Design a full app flow from wireframe to hi-fi'] },
+    'Product Design':   { why: 'Employers look for design process/thinking, not just tool proficiency.', demand: 'medium', difficulty: 'Moderate', timeWeeks: 4, courses: ['Google UX Design Certificate'], projects: ['Run a full design process on a real problem, with user research'] },
+    'UI/UX Design':     { why: 'Core competency for design roles; shows you can reason about usability.', demand: 'high', difficulty: 'Moderate', timeWeeks: 4, courses: ['Google UX Design Certificate'], projects: ['Conduct a usability test on an existing app'] },
+    'Artificial Intelligence': { why: 'Signals ability to work on AI-driven product features.', demand: 'high', difficulty: 'Hard', timeWeeks: 8, courses: ['fast.ai', 'Andrew Ng ML course'], projects: ['Build a small ML-powered feature end-to-end'] },
+    'LLMs':              { why: 'Directly relevant to modern AI product roles building on top of language models.', demand: 'high', difficulty: 'Moderate', timeWeeks: 3, courses: ['Anthropic/OpenAI prompt engineering guides'], projects: ['Build a small app using an LLM API'] },
+    'Analytics':         { why: 'Needed to make and justify data-driven product decisions.', demand: 'medium', difficulty: 'Easy', timeWeeks: 2, courses: ['Google Data Analytics Certificate'], projects: ['Analyze a real dataset and present findings'] },
+    'Data Science':      { why: 'Core skill for data-focused roles; combines stats, code, and communication.', demand: 'high', difficulty: 'Hard', timeWeeks: 8, courses: ['Kaggle Learn', 'CS109'], projects: ['Complete an end-to-end Kaggle competition'] }
+  };
+  function metaFor(skill) {
+    return SKILL_META[skill] || { why: 'Commonly requested in job listings for this role.', demand: 'medium', difficulty: 'Moderate', timeWeeks: 3, courses: [], projects: [] };
+  }
+  // 6. Content Generators
+  function generateDynamicContent(skills = [], name = 'there') {
+  // Each job's required skills carry an explicit importance weight that sums to 100.
+    // Match % = sum of weights for skills the user already has. This replaces the old
+    // arbitrary "60% floor" approach with a number that's fully traceable to real weights.
+    const normalizedSkills = skills.map(s => s.toLowerCase().trim());
+    const matchedJobs = JOBS.map(j => {
+      const present = j.skillReq.filter(r => normalizedSkills.includes(r.skill.toLowerCase()))
+      const missing = j.skillReq.filter(r => !normalizedSkills.includes(r.skill.toLowerCase()));
+      const match = present.reduce((sum, r) => sum + r.weight, 0);
+      return { ...j, match, present, missing };
+    }).sort((a, b) => b.match - a.match);
+
+    // Populate dashboard Job list (3 cards)
+    const jobsList = document.getElementById('jobsList');
+    jobsList.innerHTML = '';
+    matchedJobs.slice(0, 3).forEach(job => {
+      const div = document.createElement('div');
+      div.className = 'job-item';
+      div.innerHTML = `
+        <div>
+          <div class="job-title">${job.title}</div>
+          <div class="job-meta">${job.company} • ${job.meta}</div>
+        </div>
+        <span class="badge ${job.match >= 90 ? 'badge-hot' : 'badge-new'}">${job.match}% match</span>
+      `;
+      jobsList.appendChild(div);
+    });
+
+    // Populate Jobs tab list
+    // Populate Jobs tab list, with a full explainable skill-gap breakdown per job
+    const jobsTabList = document.getElementById('jobsTabList');
+    jobsTabList.innerHTML = '';
+    matchedJobs.forEach(job => {
+      const div = document.createElement('div');
+      div.className = 'card';
+      const missingHtml = job.missing.length === 0
+        ? `<p class="skill-gap-meta" style="margin-top:10px;">You already have every skill this role weighs on. 🎉</p>`
+        : job.missing.map(r => {
+            const meta = metaFor(r.skill);
+            const impTag = r.importance === 'critical' ? 'tag-critical' : r.importance === 'important' ? 'tag-important' : 'tag-nice';
+            const demandTag = `tag-demand-${meta.demand}`;
+            return `
+              <div class="skill-gap-item">
+                <div class="skill-gap-head">
+                  <span>${r.skill}</span>
+                  <span>+${r.weight}% if learned</span>
+                </div>
+                <div class="skill-gap-tags">
+                  <span class="${impTag}">${r.importance}</span>
+                  <span class="${demandTag}">${meta.demand} demand</span>
+                  <span class="tag-nice">${meta.difficulty} • ~${meta.timeWeeks}wk</span>
+                </div>
+                <div class="skill-gap-why">${meta.why}</div>
+                ${meta.courses.length ? `<div class="skill-gap-meta">Courses: ${meta.courses.join(', ')}</div>` : ''}
+                ${meta.projects.length ? `<div class="skill-gap-meta">Project idea: ${meta.projects[0]}</div>` : ''}
+              </div>
+            `;
+          }).join('');
+
+      const potentialMatch = Math.min(100, job.match + job.missing.reduce((s, r) => s + r.weight, 0));
+
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <h4 style="font-weight:700;font-size:16px;">${job.title}</h4>
+            <p style="color:var(--muted);font-size:14px;margin:4px 0;">${job.company} • ${job.meta}</p>
+            <div class="pill-list" style="margin-top:8px;">
+              ${job.present.map(r => `<span class="pill" style="border-color:var(--success);color:var(--success);">${r.skill}</span>`).join('')}
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <span class="badge ${job.match >= 70 ? 'badge-hot' : 'badge-new'}" style="display:inline-block;margin-bottom:8px;">${job.match}% Match</span>
+            <div><button class="btn btn-primary" onclick="alert('Applications simulated!')">Apply now</button></div>
+          </div>
+        </div>
+        <div style="margin-top:14px;">
+          <h5 style="font-weight:600;font-size:14px;margin-bottom:4px;">Skill gap — closing this gets you to ${potentialMatch}% match</h5>
+          ${missingHtml}
+        </div>
+      `;
+      jobsTabList.appendChild(div);
+    });
+    // Job matches counter update
+    const jobMatchesVal = document.getElementById('jobMatchesVal');
+    jobMatchesVal.dataset.count = matchedJobs.length;
+    animateCounter(jobMatchesVal, matchedJobs.length, 1000);
+    document.getElementById('jobsProgressBar').style.width = Math.min(100, matchedJobs.length * 15) + '%';
+
+    // Roadmap Generation
+    const allRoadmapItems = [
+      { task: 'Optimize resume contact and header details', req: 'none', reward: 'Readiness +5', impact: 5 },
+      { task: 'Incorporate quantifiable metrics in experience descriptions', req: 'none', reward: 'Readiness +10', impact: 10 },
+      { task: 'Add TailwindCSS or clean layout frameworks to skills list', missing: 'TailwindCSS', reward: 'Readiness +8', impact: 8 },
+      { task: 'Master TypeScript principles and code standard layouts', missing: 'TypeScript', reward: 'Readiness +12', impact: 12 },
+      { task: 'Learn Postgres relational indexing and query scaling', missing: 'PostgreSQL', reward: 'Readiness +10', impact: 10 },
+      { task: 'Build Figma prototype layouts for UI workflow alignment', missing: 'Figma', reward: 'Readiness +9', impact: 9 },
+      { task: 'Integrate LLM API workflows into custom web applications', missing: 'LLMs', reward: 'Readiness +15', impact: 15 }
+    ];
+
+    const activeRoadmap = allRoadmapItems.filter(item => {
+      if (item.req === 'none') return true;
+      if (item.missing && !skills.includes(item.missing)) return true;
+      return false;
+    });
+
+    // Dashboard Roadmap (4 items)
+    const roadmapList = document.getElementById('roadmapList');
+    roadmapList.innerHTML = '';
+    activeRoadmap.slice(0, 4).forEach((item, idx) => {
+      const isDone = idx === 0; // mark first item as done for interactive contrast
+      const div = document.createElement('div');
+      div.className = 'task-item';
+      div.innerHTML = `
+        <div class="checkbox ${isDone ? 'done' : ''}">${isDone ? '✓' : ''}</div>
+        <div style="flex:1;">
+          <div class="job-title" style="${isDone ? 'text-decoration:line-through;color:var(--muted);' : ''}">${item.task}</div>
+          <div class="job-meta">${isDone ? 'Completed' : item.reward}</div>
+        </div>
+      `;
+      div.querySelector('.checkbox').addEventListener('click', function() {
+        this.classList.toggle('done');
+        this.innerHTML = this.classList.contains('done') ? '✓' : '';
+        const title = this.nextElementSibling.firstElementChild;
+        title.style.textDecoration = this.classList.contains('done') ? 'line-through' : 'none';
+        title.style.color = this.classList.contains('done') ? 'var(--muted)' : 'inherit';
+      });
+      roadmapList.appendChild(div);
+    });
+
+    // Roadmap Tab
+    const roadmapTabList = document.getElementById('roadmapTabList');
+    roadmapTabList.innerHTML = '';
+    activeRoadmap.forEach((item, idx) => {
+      const isDone = idx === 0;
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.style.display = 'flex';
+      div.style.alignItems = 'center';
+      div.style.gap = '16px';
+      div.innerHTML = `
+        <div class="checkbox ${isDone ? 'done' : ''}" style="width:24px;height:24px;border:2px solid var(--border);border-radius:6px;display:grid;place-items:center;cursor:pointer;font-weight:bold;">${isDone ? '✓' : ''}</div>
+        <div style="flex:1;">
+          <h4 style="font-weight:700;font-size:16px;${isDone ? 'text-decoration:line-through;color:var(--muted);' : ''}">${item.task}</h4>
+          <p style="color:var(--muted);font-size:13px;margin-top:2px;">Target closure this week • Reward: ${item.reward}</p>
+        </div>
+      `;
+      div.querySelector('.checkbox').addEventListener('click', function() {
+        this.classList.toggle('done');
+        this.innerHTML = this.classList.contains('done') ? '✓' : '';
+        const title = this.nextElementSibling.firstElementChild;
+        title.style.textDecoration = this.classList.contains('done') ? 'line-through' : 'none';
+        title.style.color = this.classList.contains('done') ? 'var(--muted)' : 'inherit';
+      });
+      roadmapTabList.appendChild(div);
+    });
+
+    // Dynamic AI Insight
+    let insight = "Your resume has been successfully scanned. Try introducing more numerical parameters (like budgets managed, team members led, or performance gains) under experience to raise your readiness score.";
+    if (skills.length < 5) {
+      insight = "We noticed your technical list is a bit sparse. Focus on mapping key frontend and layout engineering skills (like React, Tailwind, TypeScript) to stand out for modern software development roles.";
+    } else if (!skills.includes('TypeScript') && skills.includes('JavaScript')) {
+      insight = "Adding TypeScript to your profile can unlock 42% more job matches! Since you already know JavaScript, consider shipping one mini-project in TS this week for an immediate score boost.";
+    } else if (skills.includes('Figma') && !skills.includes('Product Design')) {
+      insight = "Great work mapping Figma! Employers looking for designers look heavily for 'Product Design' processes. Highlight your workflow and system methodologies for a +10 readiness boost.";
+    }
+    document.getElementById('aiInsightText').textContent = insight;
+  }
+  // 8a. Placement Drives — real eligibility check against your resume score and best matching job
+  function renderPlacementDrives() {
+    const list = document.getElementById('placementList');
+    if (!list) return;
+
+    const data = currentResumeData;
+    if (!data) {
+      list.innerHTML = `<p style="color:var(--muted);">Complete your profile to see which drives you're eligible for.</p>`;
+      return;
+    }
+
+    const skills = (data.skills || []).map(s => s.toLowerCase().trim());
+    const allMatches = JOBS.map(j => {
+      const present = j.skillReq.filter(r => skills.includes(r.skill.toLowerCase()));
+      const match = present.reduce((s, r) => s + r.weight, 0);
+      return { title: j.title, match };
+    });
+
+    list.innerHTML = PLACEMENT_DRIVES.map(drive => {
+      const relatedMatch = allMatches.find(m => m.title === drive.relatedJobTitle);
+      const matchPct = relatedMatch ? relatedMatch.match : 0;
+      const scoreOk = data.resume_score >= drive.minResumeScore;
+      const matchOk = matchPct >= drive.minMatch;
+      const eligible = scoreOk && matchOk;
+
+      const reasons = [];
+      if (!scoreOk) reasons.push(`Resume score ${data.resume_score}% is below the ${drive.minResumeScore}% minimum.`);
+      if (!matchOk) reasons.push(`Your match for a similar role (${drive.relatedJobTitle}) is ${matchPct}%, below the ${drive.minMatch}% minimum.`);
+
+      return `
+        <div class="card ${eligible ? 'pd-eligible' : 'pd-not-eligible'}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <h4 style="font-weight:700;font-size:16px;">${drive.company} — ${drive.role}</h4>
+              <p style="color:var(--muted);font-size:13px;margin:4px 0;">${new Date(drive.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} • ${drive.location}</p>
+            </div>
+            <span class="badge ${eligible ? 'badge-hot' : 'badge-new'}">${eligible ? 'Eligible' : 'Not yet eligible'}</span>
+          </div>
+          ${eligible
+            ? `<button class="btn btn-primary" style="margin-top:10px;" onclick="alert('Application simulated!')">Apply now</button>`
+            : `<div class="pd-reason">${reasons.join(' ')}</div>`}
+        </div>
+      `;
+    }).join('');
+  }
+  // 8b. Mock Interview — questions picked from your real match data, real (rule-based) feedback
+  const QUESTION_BANK = {
+    general: [
+      "Tell me about a project you're proud of and the impact it had.",
+      "Describe a time you had to debug a difficult problem. What was your process?",
+      "How do you prioritize tasks when working on multiple things at once?",
+      "Tell me about a time you disagreed with a teammate. How did you handle it?"
+    ],
+    skillSpecific: {
+      'React': "Walk me through how you'd structure state management in a mid-sized React app.",
+      'Python': "How would you approach optimizing a slow Python script?",
+      'SQL': "Explain the difference between an INNER JOIN and a LEFT JOIN, with an example.",
+      'Machine Learning': "How would you detect and handle overfitting in a model you're training?",
+      'Docker': "Explain what a Dockerfile does and why containerization is useful.",
+      'AWS': "How would you design a simple, cost-conscious deployment on AWS for a small app?",
+      'Node.js': "How do you handle errors in an asynchronous Node.js API?",
+      'Data Science': "Walk me through how you'd approach a dataset with a lot of missing values."
+    }
+  };
+
+  let miQueue = [];
+  let miIndex = 0;
+  let miResults = [];
+
+  function buildMockInterviewSession() {
+    const skills = currentResumeData?.skills || [];
+    const normalizedSkills = skills.map(s => s.toLowerCase().trim());
+    const allMatches = JOBS.map(j => {
+      const present = j.skillReq.filter(r => normalizedSkills.includes(r.skill.toLowerCase()));
+      const missing = j.skillReq.filter(r => !normalizedSkills.includes(r.skill.toLowerCase()));
+      const match = present.reduce((s, r) => s + r.weight, 0);
+      return { ...j, match, present, missing };
+    }).sort((a, b) => b.match - a.match);
+
+    const topJob = allMatches[0];
+    const questions = [];
+
+    // Pull skill-specific questions for skills relevant to the top matched job (present or missing)
+    if (topJob) {
+      topJob.skillReq.forEach(r => {
+        if (QUESTION_BANK.skillSpecific[r.skill]) {
+          questions.push({ text: QUESTION_BANK.skillSpecific[r.skill], skill: r.skill });
+        }
+      });
+    }
+    // Fill with general questions
+    QUESTION_BANK.general.forEach(q => questions.push({ text: q, skill: null }));
+
+    return { topJob, questions: questions.slice(0, 5) };
+  }
+
+  function startMockInterview() {
+    const session = buildMockInterviewSession();
+    miQueue = session.questions;
+    miIndex = 0;
+    miResults = [];
+
+    const intro = document.getElementById('miIntro');
+    if (miQueue.length === 0) {
+      intro.innerHTML = `<p style="color:var(--muted);">Complete your profile first so we can pick relevant questions for you.</p>`;
+      return;
+    }
+    intro.innerHTML = session.topJob
+      ? `<p style="color:var(--muted);margin-bottom:16px;">Based on your top match (<strong>${session.topJob.title}</strong> at ${session.topJob.company}), here are ${miQueue.length} questions.</p>`
+      : '';
+
+    document.getElementById('miQuestionWrap').style.display = 'block';
+    document.getElementById('miDone').style.display = 'none';
+    showMiQuestion();
+  }
+
+  function showMiQuestion() {
+    const q = miQueue[miIndex];
+    document.getElementById('miQuestionText').textContent = `Q${miIndex + 1} of ${miQueue.length}: ${q.text}`;
+    document.getElementById('miAnswerInput').value = '';
+    document.getElementById('miFeedback').innerHTML = '';
+  }
+
+  // Rule-based feedback: real checks, not a fake AI grade.
+  function evaluateAnswer(text) {
+    const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+    const hasNumbers = /\d/.test(text);
+    const hasExampleWords = /(for example|e\.g\.|specifically|instance|project|built|led|used)/i.test(text);
+
+    const checks = [
+      { label: 'Answer length', pass: wordCount >= 40, note: wordCount >= 40 ? `Good depth (${wordCount} words).` : `Fairly short (${wordCount} words) — aim for 40+ to fully explain your reasoning.` },
+      { label: 'Concrete example', pass: hasExampleWords, note: hasExampleWords ? 'You referenced a specific example — good.' : 'Consider naming a specific project or situation, not just general statements.' },
+      { label: 'Quantified impact', pass: hasNumbers, note: hasNumbers ? 'You included a number/metric — strong signal for interviewers.' : 'Try adding a number (%, time saved, users, etc.) to show measurable impact.' }
+    ];
+    return checks;
+  }
+
+  document.getElementById('miSubmitBtn')?.addEventListener('click', () => {
+    const text = document.getElementById('miAnswerInput').value.trim();
+    if (!text) { toast('Write an answer first', 'error'); return; }
+    const checks = evaluateAnswer(text);
+    miResults.push({ question: miQueue[miIndex].text, checks });
+
+    document.getElementById('miFeedback').innerHTML = checks.map(c => `
+      <div class="mi-fb-box ${c.pass ? 'mi-fb-good' : 'mi-fb-warn'}">
+        <div class="mi-fb-item"><strong>${c.pass ? '✅' : '⚠️'} ${c.label}:</strong> ${c.note}</div>
+      </div>
+    `).join('') + `<button class="btn btn-primary" id="miNextBtn" style="margin-top:12px;">Next question</button>`;
+
+    document.getElementById('miNextBtn').addEventListener('click', advanceMockInterview);
+  });
+
+  document.getElementById('miSkipBtn')?.addEventListener('click', advanceMockInterview);
+
+  function advanceMockInterview() {
+    miIndex++;
+    if (miIndex >= miQueue.length) {
+      finishMockInterview();
+    } else {
+      showMiQuestion();
+    }
+  }
+
+  function finishMockInterview() {
+    document.getElementById('miQuestionWrap').style.display = 'none';
+    document.getElementById('miDone').style.display = 'block';
+    const answered = miResults.length;
+    const strong = miResults.filter(r => r.checks.every(c => c.pass)).length;
+    document.getElementById('miSummary').textContent =
+      `You answered ${answered} of ${miQueue.length} questions. ${strong} answer${strong === 1 ? '' : 's'} hit all three quality checks (length, example, metric).`;
+  }
+
+  document.getElementById('miRestartBtn')?.addEventListener('click', startMockInterview);
+  // 9. Career Intelligence — computed from real match data, not static text
+  function renderCareerIntelligence() {
+    const skills = currentResumeData?.skills || [];
+    const normalizedSkills = skills.map(s => s.toLowerCase().trim());
+    const body = document.getElementById('careerIntelBody');
+    if (!body) return;
+
+    if (skills.length === 0) {
+      body.innerHTML = `<p style="color:var(--muted);">Complete your profile to see your Career Intelligence report.</p>`;
+      return;
+    }
+
+    // Match every job, same logic as the dashboard
+    const allMatches = JOBS.map(j => {
+      const present = j.skillReq.filter(r => normalizedSkills.includes(r.skill.toLowerCase()));
+      const missing = j.skillReq.filter(r => !normalizedSkills.includes(r.skill.toLowerCase()));
+      const match = present.reduce((s, r) => s + r.weight, 0);
+      return { ...j, match, present, missing };
+    }).sort((a, b) => b.match - a.match);
+
+    const topJob = allMatches[0];
+
+    // Weaknesses: tally how often each missing skill appears as "critical" across your top 5 matches
+    const criticalGapCount = {};
+    allMatches.slice(0, 5).forEach(job => {
+      job.missing.forEach(r => {
+        if (r.importance === 'critical') {
+          criticalGapCount[r.skill] = (criticalGapCount[r.skill] || 0) + 1;
+        }
+      });
+    });
+    const topWeaknesses = Object.entries(criticalGapCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([skill, count]) => `${skill} — missing in ${count} of your top 5 matched roles`);
+
+    // Opportunity: single highest-weight missing skill across your top 3 matches
+    const oppCandidates = [];
+    allMatches.slice(0, 3).forEach(job => {
+      job.missing.forEach(r => oppCandidates.push({ ...r, job: job.title }));
+    });
+    oppCandidates.sort((a, b) => b.weight - a.weight);
+    const topOpportunity = oppCandidates[0];
+
+    body.innerHTML = `
+      <div class="ci-box ci-trajectory">
+        <h4>📈 Career Trajectory</h4>
+        <p style="font-size:13px;color:var(--muted);">
+          Your strongest current match is <strong>${topJob.title}</strong> at ${topJob.company} (${topJob.match}% match).
+          ${topJob.match >= 80
+            ? `You're close to being fully aligned with this role — closing your remaining gaps could make you a strong candidate.`
+            : `There's meaningful room to grow toward this role — see Opportunity below for the highest-leverage next step.`}
+        </p>
+      </div>
+      <div class="ci-grid">
+        <div class="ci-box ci-strength">
+          <h4>✅ Strengths</h4>
+          <ul>
+            ${skills.slice(0, 8).map(s => `<li>${s}</li>`).join('') || '<li>No skills mapped yet</li>'}
+          </ul>
+        </div>
+        <div class="ci-box ci-weakness">
+          <h4>⚠️ Weaknesses</h4>
+          <ul>
+            ${topWeaknesses.length ? topWeaknesses.map(w => `<li>${w}</li>`).join('') : '<li>No major recurring gaps detected — solid coverage.</li>'}
+          </ul>
+        </div>
+      </div>
+      <div class="ci-box ci-opportunity" style="margin-top:16px;">
+        <h4>🎯 Biggest Opportunity</h4>
+        <p style="font-size:13px;color:var(--muted);">
+          ${topOpportunity
+            ? `Learning <strong>${topOpportunity.skill}</strong> would add +${topOpportunity.weight}% to your match for ${topOpportunity.job} — the single highest-impact skill you could add right now.`
+            : `You're already well-matched across your top roles.`}
+        </p>
+      </div>
+    `;
+  }
+  // 8. Skill Gap Analysis tab
+  const skillGapJobSelect = document.getElementById('skillGapJobSelect');
+  JOBS.forEach((job, idx) => {
+    const opt = document.createElement('option');
+    opt.value = idx;
+    opt.textContent = `${job.title} — ${job.company}`;
+    skillGapJobSelect.appendChild(opt);
+  });
+
+  function renderSkillGap() {
+    const skills = currentResumeData?.skills || [];
+    const normalizedSkills = skills.map(s => s.toLowerCase().trim());
+    const job = JOBS[skillGapJobSelect.value];
+    if (!job) return;
+
+    const present = job.skillReq.filter(r => normalizedSkills.includes(r.skill.toLowerCase()));
+    const missing = job.skillReq.filter(r => !normalizedSkills.includes(r.skill.toLowerCase()));
+    const matchPct = present.reduce((s, r) => s + r.weight, 0);
+
+    // Visual: a bar per required skill, green if present, grey if missing
+    const chartWrap = document.getElementById('skillGapChartWrap');
+    chartWrap.innerHTML = `
+      <h4 style="font-weight:600;font-size:14px;margin-bottom:10px;">Your skill coverage for ${job.title}</h4>
+      ${job.skillReq.map(r => {
+        const has = normalizedSkills.includes(r.skill.toLowerCase());
+        return `
+          <div class="sg-bar-row">
+            <div class="sg-bar-label">${r.skill}</div>
+            <div class="sg-bar-track"><div class="sg-bar-fill ${has ? 'present' : 'missing'}" style="width:${has ? 100 : 0}%;"></div></div>
+            <div class="sg-bar-pct">${has ? '✅' : '—'}</div>
+          </div>
+        `;
+      }).join('')}
+      <div style="margin-top:12px;font-weight:700;">Overall match: ${matchPct}%</div>
+    `;
+
+    // Detail: why each missing skill matters, and what to do about it
+    const detail = document.getElementById('skillGapDetail');
+    if (missing.length === 0) {
+      detail.innerHTML = `<p style="color:var(--muted);">You already have every skill required for this role. 🎉</p>`;
+      return;
+    }
+    detail.innerHTML = `
+      <h4 style="font-weight:600;font-size:14px;margin:16px 0 8px;">What you're missing, and how to close the gap</h4>
+      ${missing.map(r => {
+        const meta = metaFor(r.skill);
+        const impTag = r.importance === 'critical' ? 'tag-critical' : r.importance === 'important' ? 'tag-important' : 'tag-nice';
+        const demandTag = `tag-demand-${meta.demand}`;
+        return `
+          <div class="skill-gap-item">
+            <div class="skill-gap-head">
+              <span>${r.skill}</span>
+              <span>+${r.weight}% if learned</span>
+            </div>
+            <div class="skill-gap-tags">
+              <span class="${impTag}">${r.importance}</span>
+              <span class="${demandTag}">${meta.demand} demand</span>
+              <span class="tag-nice">${meta.difficulty} • ~${meta.timeWeeks}wk</span>
+            </div>
+            <div class="skill-gap-why">${meta.why}</div>
+            ${meta.courses.length ? `<div class="skill-gap-meta">Courses: ${meta.courses.join(', ')}</div>` : ''}
+            ${meta.projects.length ? `<div class="skill-gap-meta">Project idea: ${meta.projects[0]}</div>` : ''}
+          </div>
+        `;
+      }).join('')}
+    `;
+  }
+
+  skillGapJobSelect.addEventListener('change', renderSkillGap);
+  renderSkillGap();
+  // 7. AI Mentor Chat Simulation
+  const chatForm = document.getElementById('chatForm');
+  const chatBox = document.getElementById('chatBox');
+  const chatInput = document.getElementById('chatInput');
+
+  chatForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const text = chatInput.value.trim();
+    if (!text) return;
+
+    // Append User message
+    appendMessage(text, 'user');
+    chatInput.value = '';
+
+    // Simulate Mentor reply
+    setTimeout(() => {
+      let reply = "That's a solid strategy! Based on your current skills list, I recommend highlighting how you leverage those tools in team projects. Would you like me to do a quick mockup mock interview query?";
+      if (text.toLowerCase().includes('resume') || text.toLowerCase().includes('score')) {
+        reply = `To raise your current score of ${currentResumeData?.readiness_score || 78}, let's add quantified items in your experience list. Instead of saying "developed features", write "led construction of 3 core flows increasing engagement by 15%."`;
+      } else if (text.toLowerCase().includes('interview')) {
+        reply = "Let's do a mock question. 'Can you walk me through a challenging technical problem you solved, and how you measured success?' Go ahead and outline your response!";
+      }
+      appendMessage(reply, 'mentor');
+    }, 800);
+  });
+
+  function appendMessage(text, sender) {
+    const div = document.createElement('div');
+    div.className = `chat-msg ${sender}`;
+    div.textContent = text;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  // Init Data Fetch
+  await loadResumeData();
+  window.jsLoaded = true;
+</script>
+</body>
+</html>
